@@ -12,8 +12,10 @@ export function CartProvider({ children }) {
     const [total, setTotal] = useState(0);
     const cartCount = cartItems.length;
 
-    const fetchCart = async (skip = false) => {
-        if (!user || skip) {
+    const fetchCart = async () => {
+        if (!user) {
+            setCartItems([]);
+            setTotal(0);          
             setLoadingCart(false);
             return;
         }
@@ -55,9 +57,9 @@ export function CartProvider({ children }) {
 
     const clearCart = async () => {
         try {
-            await clearCartApi();
-            setCartItems([]);
-            setTotal(0);
+            const res = await clearCartApi();
+            setCartItems(res.data.items);
+            setTotal(res.data.total);
         } catch (err) {
             console.error(err);
         }
