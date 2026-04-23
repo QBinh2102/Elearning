@@ -22,8 +22,7 @@ def create_momo():
 @payment_bp.route("/momo/ipn", methods=["POST"])
 def momo_ipn():
     data = request.get_json()
-    print("IPN CALLED")
-    print(data)
+    
     if not data:
         return jsonify({"message": "Thiếu dữ liệu IPN"}), 400
 

@@ -8,7 +8,7 @@ import "./Cart.css";
 export default function Cart() {
     const { user } = useAuth();
     const [params] = useSearchParams();
-    const { loadingCart, cartItems, total, cartCount, deleteFromCart, clearCart } = useCart();
+    const { loadingCart, cartItems, totalPrice, cartCount, fetchCart, deleteFromCart, clearCart } = useCart();
     const navigate = useNavigate();
     const hasHandledPayment = useRef(false);
 
@@ -83,7 +83,7 @@ export default function Cart() {
                 
                 <div className="right-container">
                     <span>Tổng thanh toán</span>
-                    <h1>{formattedPrice(total)}</h1>
+                    <h1>{formattedPrice(totalPrice)}</h1>
 
                     <button 
                         className="button-payment"

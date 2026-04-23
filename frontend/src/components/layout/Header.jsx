@@ -41,14 +41,9 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLogout = async () => {
-      await logout();
-      navigate("/", { replace: true });
-  };
-
   const menuItems = [
     { label: "Thông tin cá nhân", onClick: () => navigate("/profile") },
-    { label: "Đăng xuất", onClick: handleLogout, danger: true },
+    { label: "Đăng xuất", onClick: logout, danger: true },
   ]
 
   return (

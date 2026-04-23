@@ -9,13 +9,21 @@ export function CartProvider({ children }) {
     const { user } = useAuth();
     const [loadingCart, setLoadingCart] = useState(true);
     const [cartItems, setCartItems] = useState([]);
-    const [total, setTotal] = useState(0);
+    const [totalPrice, setTotalPrice] = useState(0);
     const cartCount = cartItems.length;
 
     const fetchCart = async () => {
         if (!user) {
             setCartItems([]);
-            setTotal(0);          
+            setTotalPrice(0);          
+            setLoadingCart(false);
+            return;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("resultCode") === "0") {
+            setCartItems([]);
+            setTotalPrice(0);
             setLoadingCart(false);
             return;
         }
@@ -23,7 +31,7 @@ export function CartProvider({ children }) {
         try {
             const res = await getCartApi();
             setCartItems(res.data.items);
-            setTotal(res.data.total);
+            setTotalPrice(res.data.total);
         } finally {
             setLoadingCart(false);
         }
@@ -38,7 +46,7 @@ export function CartProvider({ children }) {
             const res = await addCartApi({ course_id: courseId });
 
             setCartItems(res.data.items);
-            setTotal(res.data.total);
+            setTotalPrice(res.data.total);
         } catch (err) {
             console.error(err);
         }
@@ -49,7 +57,7 @@ export function CartProvider({ children }) {
             const res = await deleteCartApi(courseId);
 
             setCartItems(res.data.items);
-            setTotal(res.data.total);
+            setTotalPrice(res.data.total);
         } catch (err) {
             console.error(err);
         }
@@ -58,15 +66,16 @@ export function CartProvider({ children }) {
     const clearCart = async () => {
         try {
             const res = await clearCartApi();
+            console.log("Clear response:", res.data);
             setCartItems(res.data.items);
-            setTotal(res.data.total);
+            setTotalPrice(res.data.total);
         } catch (err) {
             console.error(err);
         }
     };
 
     return (
-        <CartContext.Provider value={{ loadingCart, cartItems, total, cartCount, addToCart, deleteFromCart, clearCart }}>
+        <CartContext.Provider value={{ loadingCart, cartItems, totalPrice, cartCount, fetchCart, addToCart, deleteFromCart, clearCart }}>
             {children}
         </CartContext.Provider>
     );
