@@ -1,0 +1,63 @@
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import MainLayout from "../components/layout/MainLayout";
+
+import Home from "../pages/home/Home";
+import Login from "../pages/auth/Login";
+import Register from "../pages/auth/Register";
+import SearchCourse from "../pages/searchCourse/SearchCourse";
+import DetailCourse from "../pages/detailCourse/DetailCourse";
+import Cart from "../pages/cart/Cart"
+// import Profile from "../pages/user/Profile";
+
+import { useAuth } from "../context/AuthContext";
+
+function PrivateRoute({ children, roles }) {
+  const { user } = useAuth();
+  const location = useLocation();
+
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  }
+
+  if (roles && !roles.includes(user.role)) {
+    return <h3>Không có quyền truy cập</h3>;
+  }
+
+  return children;
+}
+
+export default function AppRoutes() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Auth */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        {/* Layout */}
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/search" element={<SearchCourse />} />
+          <Route path="/courses/:id" element={<DetailCourse />} />
+
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute roles={["STUDENT", "INSTRUCTOR", "ADMIN"]}>
+                {/* <Profile /> */}
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/cart"
+            element={
+              <PrivateRoute roles={["STUDENT", "INSTRUCTOR", "ADMIN"]}>
+                <Cart />
+              </PrivateRoute>
+            }
+          />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}
