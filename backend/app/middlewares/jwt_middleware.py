@@ -1,5 +1,6 @@
 from flask_jwt_extended import jwt_required, get_jwt
 from functools import wraps
+from flask import jsonify
 
 def role_required(*roles):
     def wrapper(fn):
@@ -10,7 +11,7 @@ def role_required(*roles):
             user_role = claims.get("role")
 
             if user_role not in roles:
-                return {"message": "Không có quyền"}, 403
+                return jsonify({"message": "Không có quyền truy cập"}), 403
 
             return fn(*args, **kwargs)
         return decorator

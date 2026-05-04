@@ -15,5 +15,26 @@ class Lesson(db.Model):
 
     __mapper_args__ = {
         "polymorphic_on": type,
-        "polymorphic_identity": "lesson"
+        "polymorphic_identity": LessonType.QUIZ
     }
+
+    def to_dict(self):
+        data = {
+            "id": self.id,
+            "title": self.title,
+            "type": self.type.name if self.type else None,
+            "order_index": self.order_index,
+            "active": self.active,
+            "chapter_id": self.chapter_id
+        }
+
+        if hasattr(self, "videoUrl"):
+            data["videoUrl"] = self.videoUrl
+
+        if hasattr(self, "slideFile"):
+            data["slideFile"] = self.slideFile
+
+        if hasattr(self, "quiz") and self.quiz:
+            data["quiz"] = self.quiz.to_dict()
+
+        return data

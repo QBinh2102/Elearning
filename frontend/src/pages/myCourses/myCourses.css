@@ -1,0 +1,129 @@
+.my-courses-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 30px 20px;
+}
+
+/* TITLE */
+.my-courses-container .title {
+    font-size: 26px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+/* EMPTY */
+.my-courses-container .empty {
+    color: #777;
+    margin-top: 20px;
+}
+
+/* GRID */
+.my-courses-container .course-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .my-courses-container .course-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* CARD */
+.my-courses-container .course-card {
+    background: white;
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    border: 1px solid #eee;
+}
+
+.my-courses-container .course-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+}
+
+/* THUMBNAIL */
+.my-courses-container .thumbnail {
+    position: relative;
+    width: 180px;
+    height: 180px;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 1px solid #777;
+}
+
+.my-courses-container .thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: 0.3s;
+}
+
+.my-courses-container .course-card:hover img {
+    transform: scale(1.05);
+}
+
+/* OVERLAY */
+.my-courses-container .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: 0.3s;
+}
+
+.my-courses-container .overlay span {
+    color: white;
+    font-weight: 500;
+    background: rgba(0,0,0,0.6);
+    padding: 6px 12px;
+    border-radius: 6px;
+}
+
+.my-courses-container .course-card:hover .overlay {
+    opacity: 1;
+}
+
+/* BODY */
+.my-courses-container .card-body {
+    padding: 14px;
+}
+
+.my-courses-container .card-body h3 {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 6px;
+    line-height: 1.4;
+}
+
+.my-courses-container .card-body p {
+    font-size: 14px;
+    color: #777;
+    height: 36px;
+    overflow: hidden;
+}
+
+/* FOOTER */
+.my-courses-container .card-footer {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* BADGE */
+.my-courses-container .badge {
+    font-size: 12px;
+    background: #e6f7ed;
+    color: #2e7d32;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+}

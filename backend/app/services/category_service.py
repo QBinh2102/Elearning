@@ -1,9 +1,10 @@
 from app.models.category import Category
 from app.configs.database_config import db
 from sqlalchemy import func
+from app.utils.slug import generate_slug
 
 def find_category_by_id(id):
-    category = Category.query.get(id)
+    category = db.session.get(Category, id)
     if not category:
         raise Exception("Danh mục không tồn tại")
     return category
@@ -19,6 +20,39 @@ def find_category(data, is_admin=False):
         query = query.filter(Category.name.ilike(f"%{name}%"))
 
     return query.all()
+
+# =========================
+# 🔥 tìm category theo slug path
+# =========================
+def find_category_by_slug_path(slug_path):
+    slugs = slug_path.split("/")
+    category = None
+
+    for slug in slugs:
+        if category is None:
+            category = Category.query.filter_by(slug=slug).first()
+        else:
+            category = Category.query.filter_by(
+                slug=slug,
+                parent_id=category.id
+            ).first()
+
+        if not category:
+            return None
+
+    return category
+
+
+# =========================
+# 🔥 lấy tất cả category con
+# =========================
+def get_all_child_ids(category):
+    ids = [category.id]
+
+    for child in category.children:
+        ids.extend(get_all_child_ids(child))
+
+    return ids
 
 def get_category_tree():
     categories = Category.query.filter_by(active=True).all()
@@ -54,6 +88,17 @@ def build_tree_with_level():
     add_level(tree)
     return tree
 
+def create_slug(name):
+    slug = generate_slug(name)
+    base_slug = slug
+    count = 1
+
+    while Category.query.filter_by(slug=slug).first():
+        slug = f"{base_slug}-{count}"
+        count += 1
+
+    return slug
+
 def add_category(data):
     name = data.get("name", "").strip()
     parent_id = data.get("parent_id")
@@ -72,8 +117,11 @@ def add_category(data):
         if not parent:
             raise Exception("Danh mục cha không tồn tại")
 
+    slug = create_slug(name)
+
     new_category = Category(
         name=name,
+        slug=slug,
         parent_id=parent_id
     )
 

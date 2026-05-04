@@ -32,10 +32,11 @@ class Course(db.Model):
             "name": self.name,
             "subtitle": self.subtitle,
             "type": self.type.name,
-            "price": self.price,
+            "price": float(self.price) if self.price is not None else 0,
             "description": self.description,
             "thumbnail": self.thumbnail,
             "active": self.active,
             "instructor_id": self.instructor_id,
-            "category_id": self.category_id
+            "category_id": self.category_id,
+            "chapters": [c.to_dict() for c in self.chapters if c.active]
         }

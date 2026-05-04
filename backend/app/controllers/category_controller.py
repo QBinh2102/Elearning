@@ -12,6 +12,17 @@ def get_by_id(id):
     category = CategoryService.find_category_by_id(id)
     return jsonify(category.to_dict()), 200
 
+@category_bp.route("/by-slug")
+def get_by_slug():
+    slug_path = request.args.get("slug")
+
+    category = CategoryService.find_category_by_slug_path(slug_path)
+
+    if not category:
+        return jsonify({"message": "Không tìm thấy"}), 404
+
+    return jsonify(category.to_dict())
+
 
 @category_bp.route("", methods=["GET"])
 def get_categories():

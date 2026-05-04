@@ -7,7 +7,6 @@ from .enrollment import Enrollment
 from .lesson_progress import LessonProgress
 from .lesson import Lesson
 from .message import Message
-from .payment_item import PaymentItem
 from .payment import Payment
 from .question import Question
 from .quiz_attempt import QuizAttempt

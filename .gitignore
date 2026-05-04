@@ -15,4 +15,11 @@ build/
 
 # OS
 .DS_Store
-Thumbs.db
+Thumbs.db*.db
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/

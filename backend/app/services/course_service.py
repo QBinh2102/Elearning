@@ -1,28 +1,27 @@
 from app.models.course import Course
 from app.models.user import User
 from app.models.category import Category
+from app.models.enrollment import Enrollment
 from app.enums.user_role import UserRole
 from app.enums.course_type import CourseType
 from app.configs.database_config import db
+import app.services.category_service as CategoryService
+import app.services.cloudinary_service as CloudinaryService
 
 def find_course_by_id(id):
     course = Course.query.get(id)
     if not course:
         raise Exception("Khóa học không tồn tại")
     return course
-
-def find_courses(data, is_admin=False):
-    name = data.get("name","").strip()
-
+    
+def get_my_courses(data, user_id):
     page = int(data.get("page", 1))
     size = int(data.get("size", 10))
 
-    query = Course.query
-    if not is_admin:
-        query = query.filter(Course.active.is_(True))
-
-    if name:
-        query = query.filter(Course.name.ilike(f"%{name}%"))
+    query = db.session.query(Course).join(Enrollment).filter(
+        Enrollment.user_id == user_id,
+        Course.active.is_(True)
+    ).order_by(Enrollment.created_at.desc())
 
     pagination = query.paginate(page=page, per_page=size, error_out=False)
 
@@ -34,7 +33,47 @@ def find_courses(data, is_admin=False):
         "total_pages": pagination.pages
     }
 
-def add_course(data, user_id):
+def find_courses(data, is_admin=False):
+    name = data.get("name","").strip()
+    slug_path = data.get("category")
+
+    page = int(data.get("page", 1))
+    size = int(data.get("size", 10))
+
+    query = Course.query
+    if not is_admin:
+        query = query.filter(Course.active.is_(True))
+
+    if name:
+        query = query.filter(Course.name.ilike(f"%{name}%"))
+
+    if slug_path:
+        category = CategoryService.find_category_by_slug_path(slug_path)
+
+        if not category:
+            return {
+                "items": [],
+                "page": page,
+                "size": size,
+                "total": 0,
+                "total_pages": 0
+            }
+
+        ids = CategoryService.get_all_child_ids(category)
+
+        query = query.filter(Course.category_id.in_(ids))
+
+    pagination = query.paginate(page=page, per_page=size, error_out=False)
+
+    return {
+        "items": pagination.items,
+        "page": page,
+        "size": size,
+        "total": pagination.total,
+        "total_pages": pagination.pages
+    }
+
+def add_course(data, file, user_id):
     instructor = User.query.get(user_id)
     if not instructor:
         raise Exception("Người dùng không tồn tại")
@@ -51,7 +90,10 @@ def add_course(data, user_id):
     type_str = data.get("type")
     price = data.get("price")
     description = data.get("description")
-    thumbnail = data.get("thumbnail")
+
+    thumbnail_url = None
+    if file:
+        thumbnail_url = CloudinaryService.upload_thumbnail(file, user_id)
 
     if not name:
         raise Exception("Tên khóa học không được để trống")
@@ -84,7 +126,7 @@ def add_course(data, user_id):
         type = course_type,
         price = price,
         description = description,
-        thumbnail = thumbnail,
+        thumbnail = thumbnail_url,
         instructor_id = instructor.id,
         category_id = category.id
     )
@@ -94,7 +136,53 @@ def add_course(data, user_id):
 
     return new_course
 
-def update_course(data, user_id, course_id):
+# def update_course(data, user_id, course_id):
+#     course = Course.query.get(course_id)
+
+#     if not course:
+#         raise Exception("Khóa học không tồn tại")
+
+#     if course.instructor_id != user_id:
+#         raise Exception("Bạn không có quyền sửa khóa học này")
+    
+#     name = data.get("name","").strip()
+#     subtitle = data.get("subtitle","").strip()
+#     type_str = data.get("type")
+#     price = data.get("price")
+
+#     if name:
+#         existed = Course.query.filter(
+#             Course.name == name,
+#             Course.instructor_id == user_id,
+#             Course.id != course_id
+#         ).first()
+
+#         if existed:
+#             raise Exception("Bạn đã có khóa học trùng tên")
+
+#         course.name = name
+
+#     if subtitle is not None:
+#         course.subtitle = subtitle
+
+#     if type_str:
+#         try:
+#             course.type = CourseType[type_str]
+#         except KeyError:
+#             raise Exception("Type không hợp lệ")
+
+#     if price is not None:
+#         if float(price) < 0:
+#             raise Exception("Giá phải >= 0")
+#         course.price = price
+
+#     course.description = data.get("description")
+#     course.thumbnail = data.get("thumbnail")
+
+#     db.session.commit()
+
+#     return course
+def update_course(data, file, user_id, course_id):
     course = Course.query.get(course_id)
 
     if not course:
@@ -103,11 +191,12 @@ def update_course(data, user_id, course_id):
     if course.instructor_id != user_id:
         raise Exception("Bạn không có quyền sửa khóa học này")
     
-    name = data.get("name","").strip()
-    subtitle = data.get("subtitle","").strip()
+    name = data.get("name", "").strip()
+    subtitle = data.get("subtitle", "").strip()
     type_str = data.get("type")
     price = data.get("price")
 
+    # name
     if name:
         existed = Course.query.filter(
             Course.name == name,
@@ -120,22 +209,42 @@ def update_course(data, user_id, course_id):
 
         course.name = name
 
-    if subtitle is not None:
+    # subtitle
+    if "subtitle" in data:
         course.subtitle = subtitle
 
+    # type
     if type_str:
         try:
             course.type = CourseType[type_str]
         except KeyError:
             raise Exception("Type không hợp lệ")
 
+    # price
     if price is not None:
         if float(price) < 0:
             raise Exception("Giá phải >= 0")
         course.price = price
 
-    course.description = data.get("description")
-    course.thumbnail = data.get("thumbnail")
+    # description
+    if "description" in data:
+        course.description = data.get("description")
+
+    # thumbnail
+    # if "thumbnail" in data:
+    #     course.thumbnail = data.get("thumbnail")
+    thumbnail_url = None
+    if file:
+        thumbnail_url = CloudinaryService.upload_thumbnail(file, user_id)
+        course.thumbnail = thumbnail_url
+
+    if "active" in data:
+        active_value = data.get("active")
+
+        if isinstance(active_value, bool):
+            course.active = active_value
+        else:
+            course.active = str(active_value).lower() == "true"
 
     db.session.commit()
 
@@ -162,3 +271,11 @@ def delete_course(user_id, course_id):
     db.session.commit()
 
     return course
+
+
+def find_instructor_manage_courses(user_id):
+    courses = Course.query.filter_by(
+        instructor_id=user_id
+    ).order_by(Course.id.desc()).all()
+
+    return courses
