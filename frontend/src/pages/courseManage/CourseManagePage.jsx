@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCoursesManage, createCourse, updateCourse, deleteCourse } from "../../services/courseApi";
 import { getCategories } from "../../services/categoryApi";
+import { toast } from "react-toastify";
 
 export default function CourseManagePage() {
   const navigate = useNavigate();
@@ -21,7 +22,8 @@ export default function CourseManagePage() {
     thumbnail: "",
     thumbnailFile: null,
     category_id: "",
-    active: true,
+    active: false,
+    level: "beginner",
   });
 
   const loadCourses = async () => {
@@ -29,7 +31,7 @@ export default function CourseManagePage() {
       const res = await getCoursesManage();
       setCourses(res.data.items || []);
     } catch (error) {
-      alert(error.response?.data?.message || "Không tải được khóa học");
+      toast.error(error.response?.data?.message || "Không tải được khóa học");
     }
   };
 
@@ -100,7 +102,7 @@ export default function CourseManagePage() {
       description: "",
       thumbnail: "",
       category_id: "",
-      active: true,
+      active: false,
     });
     setEditingId(null);
     setShowForm(false);
@@ -121,35 +123,24 @@ export default function CourseManagePage() {
   const submit = async () => {
     try {
       if (!form.name.trim()) {
-        alert("Tên khóa học không được để trống");
+        toast.warning("Tên khóa học không được để trống");
         return;
       }
 
       if (!form.subtitle.trim()) {
-        alert("Subtitle không được để trống");
+        toast.warning("Subtitle không được để trống");
         return;
       }
 
       if (!form.price) {
-        alert("Giá không được để trống");
+        toast.warning("Giá không được để trống");
         return;
       }
 
       if (!form.category_id) {
-        alert("Vui lòng chọn danh mục");
+        toast.warning("Vui lòng chọn danh mục");
         return;
       }
-
-      // const payload = {
-      //   name: form.name,
-      //   subtitle: form.subtitle,
-      //   type: form.type,
-      //   price: Number(form.price),
-      //   category_id: Number(form.category_id),
-      //   description: form.description,
-      //   thumbnail: form.thumbnail,
-      //   active: form.active,
-      // };
 
       const formData = new FormData();
 
@@ -160,6 +151,7 @@ export default function CourseManagePage() {
       formData.append("category_id", form.category_id);
       formData.append("description", form.description);
       formData.append("active", form.active);
+      formData.append("level", form.level);
 
       if (form.thumbnailFile) {
         formData.append("thumbnail", form.thumbnailFile);
@@ -167,16 +159,16 @@ export default function CourseManagePage() {
 
       if (editingId) {
         await updateCourse(editingId, formData);
-        alert("Cập nhật khóa học thành công");
+        toast.success("Cập nhật khóa học thành công");
       } else {
         await createCourse(formData);
-        alert("Tạo khóa học thành công");
+        toast.success("Tạo khóa học thành công");
       }
 
       resetForm();
       loadCourses();
     } catch (error) {
-      alert(error.response?.data?.message || "Có lỗi xảy ra");
+      toast.error(error.response?.data?.message || "Có lỗi xảy ra");
     }
   };
 
@@ -194,18 +186,19 @@ export default function CourseManagePage() {
       thumbnail: course.thumbnail || "",
       category_id: course.category_id || "",
       active: course.active ?? true,
+      level: course.level || "beginner",
     });
   };
 
-  const deleteCourse = async (id) => {
+  const handleDeleteCourse = async (id) => {
     if (!window.confirm("Xác nhận xóa khóa học này?")) return;
 
     try {
       await deleteCourse(id);
-      alert("Đã xóa khóa học");
+      toast.success("Đã xóa khóa học");
       loadCourses();
     } catch (error) {
-      alert(error.response?.data?.message || "Xóa thất bại");
+      toast.error(error.response?.data?.message || "Xóa thất bại");
     }
   };
 
@@ -385,6 +378,17 @@ export default function CourseManagePage() {
                 <option value="BAT_BUOC">Bắt buộc</option>
               </select>
 
+              <select
+                style={input}
+                name="level"
+                value={form.level}
+                onChange={handleChange}
+              >
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+
               <input
                 style={input}
                 name="price"
@@ -410,7 +414,7 @@ export default function CourseManagePage() {
                   </option>
                 ))}
               </select>
-
+              {/*
               <select
                 style={input}
                 value={form.active ? "true" : "false"}
@@ -421,8 +425,9 @@ export default function CourseManagePage() {
                 <option value="true">Hoạt động</option>
                 <option value="false">Tạm ẩn</option>
               </select>
+              */}
             </div>
-            
+
             <div className="mb-3">
               <div className="d-flex align-items-center gap-3">
                 <label htmlFor="formFile" className="form-label mb-0">Thumbnail:</label>
@@ -712,7 +717,7 @@ const input = {
 
 const row = {
   display: "grid",
-  gridTemplateColumns: "1fr 1fr",
+  gridTemplateColumns: "1fr 1fr 1fr",
   gap: 12,
 };
 

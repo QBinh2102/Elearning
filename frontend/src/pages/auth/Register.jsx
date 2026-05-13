@@ -9,12 +9,14 @@ import studentIcon from "../../assets/student.png"
 import instructorIcon from "../../assets/instructor.png"
 import "../auth/auth.css"
 import { useAuth } from "../../context/AuthContext";
+import { toast } from "react-toastify"; 
 
 export default function Register() {
     const { register } = useAuth()
     const navigate = useNavigate()
     const [form, setForm] = useState({
         username: "",
+        fullname: "",
         email: "",
         password: "",
         confirmPassword: "",
@@ -31,6 +33,12 @@ export default function Register() {
             placeholder: "Tên đăng nhập",
             type: "text",
             icon: userIcon
+        },
+        {
+            name: "fullname",
+            placeholder: "Họ và tên",
+            type: "text",
+            icon: userIcon 
         },
         {
             name: "email",
@@ -71,8 +79,9 @@ export default function Register() {
 
         if (res.success) {
             navigate("/");
+            toast.success("Đăng ký thành công");
         } else {
-            console.log(res.message);
+            toast.error(res.message);
         }
     }
     

@@ -5,6 +5,7 @@ from app.models.chapter import Chapter
 from app.models.lesson import Lesson
 from app.models.lesson_progress import LessonProgress
 from app.enums.lesson_progress_status import LessonProgressStatus
+from app.services.certificate_service import create_certificate_if_not_exists
 
 
 def get_progress_detail(user_id, course_id):
@@ -45,7 +46,8 @@ def get_progress_percent(user_id, course_id):
         .filter(
             LessonProgress.student_id == user_id,
             LessonProgress.status == LessonProgressStatus.COMPLETED,
-            Chapter.course_id == course_id
+            Chapter.course_id == course_id,
+            Lesson.active.is_(True)
         ).scalar()
 
     return round((completed / total_lessons) * 100, 2)
@@ -90,3 +92,11 @@ def complete_lesson(user_id, lesson_id):
         progress.status = LessonProgressStatus.COMPLETED
 
     db.session.commit()
+    lesson = Lesson.query.get(lesson_id)
+
+    if lesson and lesson.chapter:
+        course_id = lesson.chapter.course_id
+        percent = get_progress_percent(user_id, course_id)
+
+        if percent >= 100:
+            create_certificate_if_not_exists(user_id, course_id)

@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getCourseById } from "../../services/courseApi";
-import { createChapter, removeChapter } from "../../services/chapterApi"
+import { createChapter, removeChapter } from "../../services/chapterApi";
 import { createLesson, updateLesson, deleteLesson as deleteLessonApi } from "../../services/lessonApi";
-import ForumTab from "../learnCourse/ForumTab"
+import ForumTab from "../learnCourse/ForumTab";
+import { toast } from "react-toastify";
+import { getCourseById, updateCourse } from "../../services/courseApi";
+import Swal from "sweetalert2";
 
 export default function CourseContentPage() {
   const { courseId } = useParams();
@@ -52,7 +54,7 @@ export default function CourseContentPage() {
       }
 
     } catch (error) {
-      alert("Không tải được khóa học");
+      toast.error("Không tải được khóa học");
     }
   };
 
@@ -73,7 +75,7 @@ export default function CourseContentPage() {
   const addChapter = async () => {
     try {
       if (!chapterForm.title.trim()) {
-        alert("Tên chương không được để trống");
+        toast.warning("Tên chương không được để trống");
         return;
       }
 
@@ -85,18 +87,28 @@ export default function CourseContentPage() {
         return updated.sort((a, b) => a.order_index - b.order_index);
       });
 
-      alert("Thêm chương thành công");
+      toast.success("Thêm chương thành công");
 
       setChapterForm({ title: "" });
       setShowChapterForm(false);
 
     } catch (error) {
-      alert(error.response?.data?.message || "Không thêm được chương");
+      toast.error(error.response?.data?.message || "Không thêm được chương");
     }
   };
 
   const deleteChapter = async (id) => {
-    if (!window.confirm("Xác nhận xoá chương này?")) return;
+    const result = await Swal.fire({
+      title: "Xác nhận xóa chương này?",
+      text: "Hành động này không thể hoàn tác",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Xóa",
+      cancelButtonText: "Hủy",
+      confirmButtonColor: "#e11d48",
+    })
+
+    if (!result.isConfirmed) return;
 
     try {
       await removeChapter(courseId, id);
@@ -120,10 +132,10 @@ export default function CourseContentPage() {
         setLessons([]);
       }
 
-      alert("Đã xoá chương");
+      toast.success("Đã xoá chương");
 
     } catch (error) {
-      alert(error.response?.data?.message || "Xóa chương thất bại");
+      toast.error(error.response?.data?.message || "Xóa chương thất bại");
     }
   };
 
@@ -152,23 +164,23 @@ export default function CourseContentPage() {
   const addLesson = async () => {
     try {
       if (!selectedChapter) {
-        alert("Chọn chương trước khi thêm nội dung");
+        toast.warning("Chọn chương trước khi thêm nội dung");
         return;
       }
 
       if (!lessonForm.title.trim()) {
-        alert("Tên nội dung không được để trống");
+        toast.warning("Tên nội dung không được để trống");
         return;
       }
 
       if (activeTab === "QUIZ") {
         if (!lessonForm.timeLimit || lessonForm.timeLimit <= 0) {
-          alert("Thời gian thi phải lớn hơn 0");
+          toast.warning("Thời gian thi phải lớn hơn 0");
           return;
         }
 
         if (!lessonForm.passScore || lessonForm.passScore < 0 || lessonForm.passScore > 10) {
-          alert("Điểm pass không hợp lệ");
+          toast.warning("Điểm pass không hợp lệ");
           return;
         }
       }
@@ -198,7 +210,7 @@ export default function CourseContentPage() {
           return updated.sort((a, b) => a.order_index - b.order_index);
         });
 
-        alert("Cập nhật nội dung thành công");
+        toast.success("Cập nhật nội dung thành công");
       } else {
         const res = await createLesson(selectedChapter.id, formData);
         const newLesson = res.data.data;
@@ -208,18 +220,28 @@ export default function CourseContentPage() {
           return updated.sort((a, b) => a.order_index - b.order_index);
         });
 
-        alert("Thêm nội dung thành công");
+        toast.success("Thêm nội dung thành công");
       }
 
       resetLessonForm();
 
     } catch (error) {
-      alert(error.response?.data?.message || "Có lỗi xảy ra");
+      toast.error(error.response?.data?.message || "Có lỗi xảy ra");
     }
   };
 
   const deleteLesson = async (id) => {
-    if (!window.confirm("Xác nhận xoá nội dung này?")) return;
+    const result = await Swal.fire({
+      title: "Xác nhận xoá nội dung này?",
+      text: "Hành động này không thể hoàn tác",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Xóa",
+      cancelButtonText: "Hủy",
+      confirmButtonColor: "#e11d48",
+    })
+
+    if (!result.isConfirmed) return;
 
     try {
       await deleteLessonApi(id);
@@ -242,10 +264,10 @@ export default function CourseContentPage() {
 
       setSelectedLessonId(null);
 
-      alert("Đã xoá nội dung");
+      toast.success("Đã xoá nội dung");
 
     } catch (error) {
-      alert(error.response?.data?.message || "Xóa nội dung thất bại");
+      toast.error(error.response?.data?.message || "Xóa nội dung thất bại");
     }
   };
 
@@ -280,7 +302,7 @@ export default function CourseContentPage() {
     const url = buildLessonUrl(lesson);
 
     if (!url) {
-      alert("Nội dung này chưa có link hoặc file");
+      toast.info("Nội dung này chưa có link hoặc file");
       return;
     }
 
@@ -319,16 +341,108 @@ export default function CourseContentPage() {
   };
 
   const filteredLessons = lessons.filter((lesson) => lesson.type === activeTab);
+  const handlePublish = async () => {
+      // Kiểm tra điều kiện: Khóa học phải có ít nhất 1 bài học
+      let hasContent = false;
+      // Kiểm tra trong danh sách bài học đang hiển thị HOẶC trong tất cả các chương
+      if (lessons.length > 0) {
+          hasContent = true;
+      } else {
+          hasContent = chapters.some(chapter => chapter.lessons && chapter.lessons.length > 0);
+      }
 
+      if (!hasContent) {
+          toast.warning("Khóa học hiện tại chưa có nội dung nào!");
+          return;
+      }
+      const result = await Swal.fire({
+        title: "Xuất bản khóa học?",
+        text: "Khóa học sẽ hiển thị công khai ở Trang chủ. Bạn đã chắc chắn upload đủ nội dung chưa?",
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "Xuất bản ngay",
+        cancelButtonText: "Chưa, để sau",
+        confirmButtonColor: "#16a34a",
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        // Gọi API cập nhật trạng thái thành true
+        const formData = new FormData();
+        formData.append("active", true);
+
+        await updateCourse(courseId, formData);
+        
+        // Cập nhật lại giao diện ngay lập tức
+        setCourse(prev => ({ ...prev, active: true }));
+        toast.success("Đã xuất bản khóa học thành công!");
+        
+      } catch (error) {
+        toast.error(error.response?.data?.message || "Lỗi khi xuất bản khóa học");
+      }
+    };
+      const handleUnpublish = async () => {
+      const result = await Swal.fire({
+        title: "Tạm ẩn khóa học?",
+        text: "Các học viên của bạn sẽ không nhìn thấy khóa học này nữa và cũng không thể tìm kiếm trên Trang chủ.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Tạm ẩn ngay",
+        cancelButtonText: "Hủy",
+        confirmButtonColor: "#f59e0b", 
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        const formData = new FormData();
+        formData.append("active", false);
+
+        await updateCourse(courseId, formData);
+        
+        setCourse(prev => ({ ...prev, active: false }));
+        toast.success("Đã tạm ẩn khóa học!");
+      } catch (error) {
+        toast.error(error.response?.data?.message || "Lỗi khi tạm ẩn khóa học");
+      }
+    };
   return (
     <div style={page}>
       <div style={container}>
         <div style={topBar}>
-          <h1 style={title}>Quản lý khóa học</h1>
+          <div>
+            <h1 style={title}>Quản lý khóa học</h1>
+            {/* Hiển thị trạng thái để Giảng viên biết */}
+            {course?.active ? (
+              <span style={{...badge, background: "#dcfce7", color: "#15803d", marginTop: "8px", display: "inline-block"}}>● Đang hoạt động</span>
+            ) : (
+              <span style={{...badge, background: "#fee2e2", color: "#b91c1c", marginTop: "8px", display: "inline-block"}}>● Tạm ẩn (Chưa xuất bản)</span>
+            )}
+          </div>
 
-          <button style={lightBtn} onClick={() => navigate("/manage-course")}>
-            ← Quay lại khóa học
-          </button>
+          <div style={{ display: "flex", gap: "12px" }}>
+            {/* Khóa đang ẩn thì hiện Xuất bản, khóa đang hđ thì hiện Tạm ẩn */}
+            {!course?.active ? (
+              <button 
+                style={{ ...lightBtn, background: "#16a34a", color: "#fff", border: "none" }} 
+                onClick={handlePublish}
+              >
+                Xuất bản khóa học
+              </button>
+            ) : (
+              <button 
+                style={{ ...lightBtn, background: "#f59e0b", color: "#fff", border: "none" }} 
+                onClick={handleUnpublish}
+              >
+                Tạm ẩn khóa học
+              </button>
+            )}
+
+            <button style={lightBtn} onClick={() => navigate("/manage-course")}>
+              ← Quay lại khóa học
+            </button>
+          </div>
         </div>
 
         <div style={courseCard}>
@@ -598,6 +712,6 @@ const selectedLessonRow = { background: "#eff6ff" };
 
 // Style bổ sung cho Main Tab
 const mainTabsContainer = { display: "flex", gap: "20px", borderBottom: "2px solid #e2e8f0", marginBottom: "10px" };
-const mainTabBtn = { padding: "12px 24px", background: "none", border: "none", cursor: "pointer", fontSize: "16px", fontWeight: "600", color: "#64748b", position: "relative", bottom: "-2px" };
+const mainTabBtn = { padding: "12px 24px", background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", borderBottom: "3px solid transparent", cursor: "pointer", fontSize: "16px", fontWeight: "600", color: "#64748b", position: "relative", bottom: "-2px" };
 const activeMainTabBtn = { ...mainTabBtn, color: "#2563eb", borderBottom: "3px solid #2563eb" };
 const forumWrapper = { background: "#fff", borderRadius: "16px", padding: "20px", boxShadow: "0 8px 24px rgba(0,0,0,0.05)" };
